@@ -153,7 +153,7 @@ impl ChessGame {
         }
     }
 
-    /// Checks if a move is valid based on piece type, turn, and rules.
+    // Checks if a move is valid based on piece type, turn, and rules.
     fn validate_move(
         &self,
         start: (usize, usize),
@@ -171,7 +171,6 @@ impl ChessGame {
         let start_square = self.board.squares[start_row][start_col];
         let end_square = self.board.squares[end_row][end_col];
 
-        // Ensure there's a piece at the start
         let piece = match start_square.occupant {
             Some(p) => p,
             None => return false,
@@ -309,7 +308,7 @@ impl ChessGame {
 
 impl EventHandler<GameError> for ChessGame {
     fn update(&mut self, _ctx: &mut Context) -> Result<(), GameError> {
-        // No special logic
+        // No special logic, yet
         Ok(())
     }
 
@@ -424,9 +423,6 @@ fn main() -> GameResult {
         .window_mode(WindowMode::default().dimensions((TILE_SIZE * 8.0), (TILE_SIZE * 8.0))) //Window size based on tile sizes
         .build()?;
 
-    // Create the game, passing a mutable reference to `ctx`
     let game = ChessGame::new(&mut ctx)?;
-
-    // Now pass ownership of `ctx`, `event_loop`, and `game` to `event::run()`
     event::run(ctx, event_loop, game)
 }
