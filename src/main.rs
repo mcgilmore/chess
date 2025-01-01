@@ -5,10 +5,25 @@ use ggez::graphics::{
 };
 use ggez::{Context, ContextBuilder, GameError, GameResult};
 use ggez::conf::{WindowMode, WindowSetup};
+
 use std::path::PathBuf;
+
+use clap::Parser;
 
 mod pieces;
 use pieces::Pieces;
+
+/// Command-line arguments for the chess game.
+#[derive(Parser)]
+#[command(name = "chess")]
+#[command(author = "Dr. Hugh Jass")]
+#[command(version = "0.1")]
+#[command(about = "Simple chess in rust with ggez")]
+struct Args {
+    /// Optional FEN string to initialize the game state
+    #[arg(short, long)]
+    fen: Option<String>,
+}
 
 const BOARD_SIZE: usize = 8;
 const TILE_SIZE: f32 = 150.0;
@@ -809,11 +824,25 @@ impl EventHandler<GameError> for ChessGame {
 }
 
 fn main() -> GameResult {
+    // Parse command-line arguments
+    let args = Args::parse();
+
     let (mut ctx, event_loop) = ContextBuilder::new("chess", "YourName")
         .window_setup(WindowSetup::default().title("Chess"))
         .window_mode(WindowMode::default().dimensions((TILE_SIZE * 8.0), (TILE_SIZE * 8.0))) //Window size based on tile sizes
         .build()?;
 
-    let game = ChessGame::new(&mut ctx)?;
+    let mut game = ChessGame::new(&mut ctx)?;
+
+    if let Some(fen) = args.fen {
+        match game.from_fen(&fen) {
+            Ok(_) => println!("Loaded FEN: {}", fen),
+            Err(err) => {
+                eprintln!("Failed to load FEN: {}", err);
+                return Err(GameError::CustomError(err));
+            }
+        }
+    }
+
     event::run(ctx, event_loop, game)
 }
