@@ -26,20 +26,67 @@ impl Pieces {
         let mut mb = MeshBuilder::new();
         // Scaling factors based on TILE_SIZE
         let tile_size = crate::TILE_SIZE;
+        let grid_square = tile_size / 10.0; // Each square will be a 10x10 grid
         let piece_radius = tile_size * 0.4;
-        let piece_offset = tile_size * 0.1; // Offset to center pieces in tile
+        let piece_offset = tile_size * 0.2;
         let piece_color = match piece_color {
             crate::PieceColor::White => Color::from_rgb(240, 240, 240),
             crate::PieceColor::Black => Color::from_rgb(50, 50, 50),
         };
-
+        
+        // Each piece will be drawn on a 6x8 grid
         match piece_type {
             crate::PieceType::Pawn => {
-                mb.circle(
+                // Head and body
+                mb.rectangle(
                     DrawMode::fill(),
-                    [x + tile_size / 2.0, y + tile_size / 2.0], // Centered within tile
-                    piece_radius,
-                    0.5,
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square * 2.0,
+                        y + grid_square * 2.0,
+                        grid_square * 2.0, // width
+                        grid_square * 6.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square,
+                        y + grid_square * 3.0,
+                        grid_square * 4.0, // width
+                        grid_square * 2.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square * 1.5,
+                        y + grid_square * 2.5,
+                        grid_square * 3.0, // width
+                        grid_square * 3.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                // Base
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset,
+                        y + grid_square * 7.0,
+                        grid_square * 6.0, // width
+                        grid_square * 1.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square,
+                        y + grid_square * 6.5,
+                        grid_square * 4.0, // width
+                        grid_square * 1.0, // height 
+                    ),
                     piece_color,
                 )?;
             }
