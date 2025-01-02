@@ -126,28 +126,68 @@ impl Pieces {
                 )?;
             }
             crate::PieceType::Rook => {
+                // Body
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square * 1.5,
+                        y + grid_square * 2.0,
+                        grid_square * 3.0, // width
+                        grid_square * 6.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square * 1.0,
+                        y + grid_square * 1.0,
+                        grid_square * 1.0, // width
+                        grid_square * 1.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square * 2.5,
+                        y + grid_square * 1.0,
+                        grid_square * 1.0, // width
+                        grid_square * 1.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square * 4.0,
+                        y + grid_square * 1.0,
+                        grid_square * 1.0, // width
+                        grid_square * 1.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                // Base
                 mb.rectangle(
                     DrawMode::fill(),
                     ggez::graphics::Rect::new(
                         x + piece_offset,
-                        y + tile_size / 2.0 - piece_radius,
-                        piece_radius * 2.0,
-                        piece_radius * 1.2,
+                        y + grid_square * 7.0,
+                        grid_square * 6.0, // width
+                        grid_square * 1.0, // height 
                     ),
                     piece_color,
                 )?;
-                for i in 0..3 {
-                    mb.rectangle(
-                        DrawMode::fill(),
-                        ggez::graphics::Rect::new(
-                            x + piece_offset + (i as f32 * piece_radius / 1.2),
-                            y + tile_size / 2.0 - piece_radius * 1.2,
-                            piece_radius / 2.0,
-                            piece_radius / 2.0,
-                        ),
-                        piece_color,
-                    )?;
-                }
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square,
+                        y + grid_square * 6.5,
+                        grid_square * 4.0, // width
+                        grid_square * 1.0, // height 
+                    ),
+                    piece_color,
+                )?;
             }
             crate::PieceType::Queen => {
                 mb.circle(
