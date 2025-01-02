@@ -110,18 +110,66 @@ impl Pieces {
                 )?;
             }
             crate::PieceType::Bishop => {
-                mb.circle(
+                // Body
+                mb.rectangle(
                     DrawMode::fill(),
-                    [x + tile_size / 2.0, y + tile_size / 2.5],
-                    piece_radius,
-                    0.5,
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square * 2.0,
+                        y + grid_square * 2.0,
+                        grid_square * 2.0, // width
+                        grid_square * 5.0, // height 
+                    ),
                     piece_color,
                 )?;
-                mb.circle(
+                mb.rectangle(
                     DrawMode::fill(),
-                    [x + tile_size / 2.0, y + tile_size / 1.5],
-                    piece_radius / 1.5,
-                    0.5,
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square * 3.0,
+                        y + grid_square,
+                        grid_square * 0.5, // width
+                        grid_square * 1.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square * 2.5,
+                        y + grid_square * 1.5,
+                        grid_square * 1.5, // width
+                        grid_square * 1.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square,
+                        y + grid_square * 2.5,
+                        grid_square * 4.0, // width
+                        grid_square * 0.5, // height 
+                    ),
+                    piece_color,
+                )?;
+                // Base
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset,
+                        y + grid_square * 7.0,
+                        grid_square * 6.0, // width
+                        grid_square * 1.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_offset + grid_square,
+                        y + grid_square * 6.5,
+                        grid_square * 4.0, // width
+                        grid_square * 1.0, // height 
+                    ),
                     piece_color,
                 )?;
             }
