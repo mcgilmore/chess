@@ -22,9 +22,9 @@ impl Pieces {
         let tile_size = crate::TILE_SIZE;
         let grid_square = tile_size / 10.0;
         let piece_x_offset = tile_size * 0.2;
-        let piece_y_offset = tile_size * 0.1;
+        let piece_y_offset = tile_size * 0.15;
         let piece_color = match piece_color {
-            crate::PieceColor::White => Color::from_rgb(230, 230, 230),
+            crate::PieceColor::White => Color::from_rgb(240, 240, 240),
             crate::PieceColor::Black => Color::from_rgb(50, 50, 50),
         };
         
@@ -266,7 +266,78 @@ impl Pieces {
                 )?;
             }
             crate::PieceType::Queen => {
-                
+                // Head and crown. Queen of my heart
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 1.5,
+                        y + piece_y_offset + grid_square * 0.5,
+                        grid_square * 3.0, // width
+                        grid_square * 1.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 1.5,
+                        y + piece_y_offset,
+                        grid_square * 0.25, // width
+                        grid_square * 0.5, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 2.0,
+                        y + piece_y_offset + grid_square * 0.25,
+                        grid_square * 0.25, // width
+                        grid_square * 0.5, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle( // Middle one
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 2.875,
+                        y + piece_y_offset + grid_square * 0.25,
+                        grid_square * 0.25, // width
+                        grid_square * 0.5, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 3.75,
+                        y + piece_y_offset + grid_square * 0.25,
+                        grid_square * 0.25, // width
+                        grid_square * 0.5, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 4.25,
+                        y + piece_y_offset,
+                        grid_square * 0.25, // width
+                        grid_square * 0.5, // height 
+                    ),
+                    piece_color,
+                )?;
+                // Body
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 2.0,
+                        y + piece_y_offset + grid_square,
+                        grid_square * 2.0, // width
+                        grid_square * 6.0, // height 
+                    ),
+                    piece_color,
+                )?;
                 // Base
                 mb.rectangle(
                     DrawMode::fill(),
@@ -290,7 +361,89 @@ impl Pieces {
                 )?;
             }
             crate::PieceType::King => {
-
+                // Cross
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 2.75,
+                        y + piece_y_offset / 2.0,
+                        grid_square * 0.5, // width
+                        grid_square * 2.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 2.5,
+                        y + (piece_y_offset / 2.0) + grid_square * 0.25,
+                        grid_square * 1.05, // width
+                        grid_square * 0.5, // height 
+                    ),
+                    piece_color,
+                )?;
+                // Head and crown
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 1.5,
+                        y + piece_y_offset + grid_square * 0.5,
+                        grid_square * 3.0, // width
+                        grid_square * 1.0, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 1.5,
+                        y + piece_y_offset,
+                        grid_square * 0.25, // width
+                        grid_square * 0.5, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 2.0,
+                        y + piece_y_offset + grid_square * 0.25,
+                        grid_square * 0.25, // width
+                        grid_square * 0.5, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 3.75,
+                        y + piece_y_offset + grid_square * 0.25,
+                        grid_square * 0.25, // width
+                        grid_square * 0.5, // height 
+                    ),
+                    piece_color,
+                )?;
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 4.25,
+                        y + piece_y_offset,
+                        grid_square * 0.25, // width
+                        grid_square * 0.5, // height 
+                    ),
+                    piece_color,
+                )?;
+                // Body
+                mb.rectangle(
+                    DrawMode::fill(),
+                    ggez::graphics::Rect::new(
+                        x + piece_x_offset + grid_square * 2.0,
+                        y + piece_y_offset + grid_square,
+                        grid_square * 2.0, // width
+                        grid_square * 6.0, // height 
+                    ),
+                    piece_color,
+                )?;
                 // Base
                 mb.rectangle(
                     DrawMode::fill(),

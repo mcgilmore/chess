@@ -1,12 +1,9 @@
 use ggez::event::{self, EventHandler, MouseButton};
-use ggez::glam::Vec2;
 use ggez::graphics::{
     self, Canvas, Color, DrawMode, DrawParam, Mesh, PxScale, Rect, Text, TextFragment,
 };
 use ggez::{Context, ContextBuilder, GameError, GameResult};
 use ggez::conf::{WindowMode, WindowSetup};
-
-use std::path::PathBuf;
 
 use clap::Parser;
 
