@@ -1,7 +1,5 @@
 use ggez::event::{self, EventHandler, MouseButton};
-use ggez::graphics::{
-    self, Canvas, Color, DrawMode, DrawParam, Mesh, PxScale, Rect, Text, TextFragment,
-};
+use ggez::graphics::{Canvas, Color, DrawMode, DrawParam, Mesh, Rect};
 use ggez::{Context, ContextBuilder, GameError, GameResult};
 use ggez::conf::{WindowMode, WindowSetup};
 
@@ -826,7 +824,7 @@ fn main() -> GameResult {
 
     let (mut ctx, event_loop) = ContextBuilder::new("chess", "YourName")
         .window_setup(WindowSetup::default().title("Chess"))
-        .window_mode(WindowMode::default().dimensions((TILE_SIZE * 8.0), (TILE_SIZE * 8.0))) //Window size based on tile sizes
+        .window_mode(WindowMode::default().dimensions(TILE_SIZE * 8.0, TILE_SIZE * 8.0)) //Window size based on tile sizes
         .build()?;
 
     let mut game = ChessGame::new(&mut ctx)?;

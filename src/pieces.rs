@@ -1,5 +1,5 @@
-use ggez::graphics::{Canvas, Color, DrawMode, DrawParam, Mesh, MeshBuilder};
-use ggez::{Context, GameError, GameResult};
+use ggez::graphics::{Canvas, Color, DrawMode, DrawParam, MeshBuilder};
+use ggez::{Context, GameResult};
 
 pub struct Pieces;
 
