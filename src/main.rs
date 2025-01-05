@@ -5,6 +5,8 @@ use ggez::conf::{WindowMode, WindowSetup};
 
 use clap::Parser;
 
+use rand::seq::SliceRandom;
+
 mod pieces;
 use pieces::Pieces;
 
@@ -133,6 +135,8 @@ impl ChessBoard {
 struct ChessGame {
     board: ChessBoard,
     selected: Option<(usize, usize)>,
+    valid_moves: Vec<(usize, usize)>,
+    show_possible_moves: bool,
     pieces: Pieces,
     turn: PieceColor,
     needs_redraw: bool,
@@ -148,6 +152,8 @@ impl ChessGame {
         Ok(Self {
             board: ChessBoard::new_standard(),
             selected: None,
+            valid_moves: Vec::new(),
+            show_possible_moves: true,
             turn: PieceColor::White,
             needs_redraw: true,
             castling_rights: "KQkq".to_string(),
@@ -470,6 +476,33 @@ impl ChessGame {
         true
     }
 
+    fn generate_valid_moves(&self, color: PieceColor) -> Vec<((usize, usize), (usize, usize))> {
+        let mut valid_moves = Vec::new();
+
+        for row in 0..BOARD_SIZE {
+            for col in 0..BOARD_SIZE {
+                if let Some(piece) = self.board.squares[row][col].occupant {
+                    if piece.color == color {
+                        for target_row in 0..BOARD_SIZE {
+                            for target_col in 0..BOARD_SIZE {
+                                if self.validate_move((row, col), (target_row, target_col)) {
+                                    valid_moves.push(((row, col), (target_row, target_col)));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        valid_moves
+    }
+
+    fn choose_ai_move(&self) -> Option<((usize, usize), (usize, usize))> {
+        let valid_moves = self.generate_valid_moves(self.turn);
+        valid_moves.choose(&mut rand::thread_rng()).cloned()
+    }
+
     fn to_fen(&self) -> String {
         let mut fen = String::new();
 
@@ -658,6 +691,8 @@ impl Clone for ChessGame {
                 squares: self.board.squares,
             },
             selected: self.selected,
+            valid_moves: self.valid_moves.clone(),
+            show_possible_moves: self.show_possible_moves,
             pieces: Pieces::new(), // Pieces doesn't need to carry state
             turn: self.turn,
             needs_redraw: self.needs_redraw,
@@ -687,17 +722,35 @@ impl EventHandler<GameError> for ChessGame {
         if !self.needs_redraw {
             return Ok(());
         }
-
-        // Create a canvas, clear to green
+    
         let mut canvas = Canvas::from_frame(ctx, Color::from_rgb(34, 139, 34));
-
+    
+        // Draw the board squares
         for row in 0..BOARD_SIZE {
             for col in 0..BOARD_SIZE {
                 let is_light = (row + col) % 2 == 0;
-                let color = if is_light {
-                    Color::from_rgb(161, 159, 151)
+                let is_valid_move = self.valid_moves.contains(&(row, col));
+
+                let color = if self.show_possible_moves {
+                    if is_valid_move {
+                        if is_light {
+                            Color::from_rgb(189, 187, 179) // Highlight light square for valid moves
+                        } else {
+                            Color::from_rgb(180, 220, 180) // Highlight dark square for valid moves
+                        }
+                    } else {
+                        if is_light {
+                            Color::from_rgb(161, 159, 151) // Regular light square color
+                        } else {
+                            Color::from_rgb(118, 150, 86) // Regular dark square color
+                        }
+                    }
                 } else {
-                    Color::from_rgb(118, 150, 86)
+                    if is_light {
+                        Color::from_rgb(161, 159, 151) // Regular light square color
+                    } else {
+                        Color::from_rgb(118, 150, 86) // Regular dark square color
+                    }
                 };
 
                 let rect = Rect::new(
@@ -710,7 +763,8 @@ impl EventHandler<GameError> for ChessGame {
                 canvas.draw(&mesh, DrawParam::default());
             }
         }
-
+    
+        // Highlight selected square
         if let Some((r, c)) = self.selected {
             let rect = Rect::new(
                 c as f32 * TILE_SIZE,
@@ -721,7 +775,8 @@ impl EventHandler<GameError> for ChessGame {
             let mesh = Mesh::new_rectangle(ctx, DrawMode::stroke(3.0), rect, Color::RED)?;
             canvas.draw(&mesh, DrawParam::default());
         }
-
+    
+        // Draw pieces
         for row in 0..BOARD_SIZE {
             for col in 0..BOARD_SIZE {
                 if let Some(piece) = self.board.squares[row][col].occupant {
@@ -731,8 +786,26 @@ impl EventHandler<GameError> for ChessGame {
                 }
             }
         }
-
+    
         canvas.finish(ctx)?;
+        Ok(())
+    }
+
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: ggez::input::keyboard::KeyInput,
+        _repeat: bool,
+    ) -> Result<(), GameError> {
+        if let Some(key) = keycode.keycode {
+            match key {
+                ggez::input::keyboard::KeyCode::M => {
+                    self.show_possible_moves = !self.show_possible_moves;
+                    self.needs_redraw = true;
+                }
+                _ => {}
+            }
+        }
         Ok(())
     }
 
@@ -749,28 +822,29 @@ impl EventHandler<GameError> for ChessGame {
                     if selected == (row, col) {
                         // Unselect the currently selected square
                         self.selected = None;
+                        self.valid_moves.clear();
                         self.needs_redraw = true;
                     } else if self.validate_move(selected, (row, col)) {
                         let mut piece = self.board.squares[selected.0][selected.1].occupant.take().unwrap();
                         piece.has_moved = true;
-
+    
                         // Update en passant target for pawns moving two squares
                         if piece.piece_type == PieceType::Pawn && (selected.0 as isize - row as isize).abs() == 2 {
                             self.en_passant_target = Some(((selected.0 + row) / 2, col));
                         } else {
                             self.en_passant_target = None;
                         }
-
+    
                         if piece.piece_type == PieceType::Pawn && Some((row, col)) == self.en_passant_target {
                             let captured_pawn_row = if piece.color == PieceColor::White { row + 1 } else { row - 1 };
                             self.board.squares[captured_pawn_row][col].occupant = None;
                         }
-
+    
                         // Update castling rights (if a rook or king moves)
                         if piece.piece_type == PieceType::Rook || piece.piece_type == PieceType::King {
                             self.update_castling_rights(selected);
                         }
-
+    
                         // Update move counters
                         if piece.piece_type == PieceType::Pawn || self.board.squares[row][col].occupant.is_some() {
                             self.halfmove_clock = 0;
@@ -780,37 +854,44 @@ impl EventHandler<GameError> for ChessGame {
                         if self.turn == PieceColor::Black {
                             self.fullmove_number += 1;
                         }
-
+    
                         if piece.piece_type == PieceType::King && (selected.1 as isize - col as isize).abs() == 2 {
                             self.perform_castling(selected, (row, col));
                         }
-                        
-                        
-
+    
                         self.board.squares[row][col].occupant = Some(piece);
                         self.turn = match self.turn {
                             PieceColor::White => PieceColor::Black,
                             PieceColor::Black => PieceColor::White,
                         };
                         self.selected = None;
+                        self.valid_moves.clear();
                         self.needs_redraw = true;
-                        } else {
-                            // Invalid move, clear selection
-                            self.selected = None;
+                    } else {
+                        // Invalid move, clear selection
+                        self.selected = None;
+                        self.valid_moves.clear();
+                        self.needs_redraw = true;
+                    }
+                } else {
+                    // Select a square if it has a piece belonging to the current player
+                    if let Some(piece) = self.board.squares[row][col].occupant {
+                        if piece.color == self.turn {
+                            self.selected = Some((row, col));
+                            self.valid_moves = self
+                                .generate_valid_moves(self.turn)
+                                .into_iter()
+                                .filter(|(start, _)| *start == (row, col))
+                                .map(|(_, end)| end)
+                                .collect();
                             self.needs_redraw = true;
                         }
-                        } else {
-                            // Select a square if it has a piece belonging to the current player
-                            if let Some(piece) = self.board.squares[row][col].occupant {
-                                if piece.color == self.turn {
-                                    self.selected = Some((row, col));
-                                    self.needs_redraw = true;
-                                }
-                            }
-                        }
+                    }
+                }
             } else {
                 // Clicked outside the board, clear selection
                 self.selected = None;
+                self.valid_moves.clear();
                 self.needs_redraw = true;
             }
         }
