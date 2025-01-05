@@ -20,8 +20,9 @@ struct Args {
     /// Optional FEN string to initialize the game state
     #[arg(short, long)]
     fen: Option<String>,
-    #[arg(short, long)]
-    opponent: Option<bool>,
+    /// Play against an AI opponent as white (EXPERIMENTAL)
+    #[arg(short, long, default_value = "false")]
+    opponent: bool,
 }
 
 const BOARD_SIZE: usize = 8;
@@ -146,10 +147,11 @@ struct ChessGame {
     en_passant_target: Option<(usize, usize)>, // Square where en passant is possible
     halfmove_clock: u32, // Number of halfmoves since the last capture or pawn move
     fullmove_number: u32, // Fullmove count (increments after Black's turn)
+    has_ai_opponent: bool,
 }
 
 impl ChessGame {
-    fn new(ctx: &mut Context) -> GameResult<Self> {
+    fn new(ctx: &mut Context, has_ai_opponent: bool) -> GameResult<Self> {
         let pieces = Pieces::new(); // Initialize the Pieces struct
         Ok(Self {
             board: ChessBoard::new_standard(),
@@ -163,6 +165,7 @@ impl ChessGame {
             halfmove_clock: 0,
             fullmove_number: 1,
             pieces,
+            has_ai_opponent,
         })
     }
 
@@ -504,9 +507,53 @@ impl ChessGame {
         valid_moves
     }
 
+    fn score_move(&self, start: (usize, usize), end: (usize, usize)) -> i32 {
+        let capture_value = if let Some(piece) = self.board.squares[end.0][end.1].occupant {
+            match piece.piece_type {
+                PieceType::Pawn => 1,
+                PieceType::Knight | PieceType::Bishop => 3,
+                PieceType::Rook => 5,
+                PieceType::Queen => 9,
+                PieceType::King => 1000, // Capturing the king is effectively checkmate
+            }
+        } else {
+            0
+        };
+    
+        // Add positional or strategic considerations here
+        let positional_value = 0; // Placeholder for positional evaluation logic
+    
+        capture_value + positional_value
+    }
+
     fn choose_ai_move(&self) -> Option<((usize, usize), (usize, usize))> {
         let valid_moves = self.generate_valid_moves(self.turn);
-        valid_moves.choose(&mut rand::thread_rng()).cloned()
+    
+        // Evaluate each move and pick the one with the highest score
+        valid_moves
+            .iter()
+            .map(|&(start, end)| (start, end, self.score_move(start, end)))
+            .max_by_key(|&(_, _, score)| score) // Choose the move with the highest score
+            .map(|(start, end, _)| (start, end)) // Return only the move, not the score
+    }
+
+    fn ai_turn(&mut self) -> bool {
+        if let Some((start, end)) = self.choose_ai_move() {
+            let mut piece = self.board.squares[start.0][start.1].occupant.take().unwrap();
+            piece.has_moved = true;
+            self.board.squares[end.0][end.1].occupant = Some(piece);
+    
+            // Update turn
+            self.turn = match self.turn {
+                PieceColor::White => PieceColor::Black,
+                PieceColor::Black => PieceColor::White,
+            };
+    
+            self.needs_redraw = true;
+            true
+        } else {
+            false // No valid moves, AI loses
+        }
     }
 
     fn to_fen(&self) -> String {
@@ -706,6 +753,7 @@ impl Clone for ChessGame {
             en_passant_target: self.en_passant_target,
             halfmove_clock: self.halfmove_clock,
             fullmove_number: self.fullmove_number,
+            has_ai_opponent: self.has_ai_opponent,
         }
     }
 }
@@ -720,7 +768,16 @@ impl Clone for ChessBoard {
 
 impl EventHandler<GameError> for ChessGame {
     fn update(&mut self, _ctx: &mut Context) -> Result<(), GameError> {
-        // No special logic, yet
+        if self.has_ai_opponent && self.turn == PieceColor::Black {
+            // AI's turn
+            if self.ai_turn() {
+                // Update turn and redraw
+                self.needs_redraw = true;
+            } else {
+                println!("AI has no valid moves. Checkmate or stalemate!");
+            }
+        }
+
         Ok(())
     }
 
@@ -907,7 +964,7 @@ fn main() -> GameResult {
         .window_mode(WindowMode::default().dimensions(TILE_SIZE * 8.0, TILE_SIZE * 8.0)) //Window size based on tile sizes
         .build()?;
 
-    let mut game = ChessGame::new(&mut ctx)?;
+        let mut game = ChessGame::new(&mut ctx, args.opponent)?;
 
     if let Some(fen) = args.fen {
         match game.from_fen(&fen) {
