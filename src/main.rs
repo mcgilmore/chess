@@ -20,6 +20,8 @@ struct Args {
     /// Optional FEN string to initialize the game state
     #[arg(short, long)]
     fen: Option<String>,
+    #[arg(short, long)]
+    opponent: Option<bool>,
 }
 
 const BOARD_SIZE: usize = 8;
@@ -731,7 +733,7 @@ impl EventHandler<GameError> for ChessGame {
                 let is_light = (row + col) % 2 == 0;
                 let is_valid_move = self.valid_moves.contains(&(row, col));
 
-                let color = if self.show_possible_moves {
+                let mut color = if self.show_possible_moves {
                     if is_valid_move {
                         if is_light {
                             Color::from_rgb(189, 187, 179) // Highlight light square for valid moves
@@ -753,6 +755,11 @@ impl EventHandler<GameError> for ChessGame {
                     }
                 };
 
+                // Highlight selected square; overrides other colours
+                if Some((row, col)) == self.selected{
+                    color = Color::from_rgb(237, 202, 142);
+                }
+
                 let rect = Rect::new(
                     col as f32 * TILE_SIZE,
                     row as f32 * TILE_SIZE,
@@ -762,18 +769,6 @@ impl EventHandler<GameError> for ChessGame {
                 let mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), rect, color)?;
                 canvas.draw(&mesh, DrawParam::default());
             }
-        }
-    
-        // Highlight selected square
-        if let Some((r, c)) = self.selected {
-            let rect = Rect::new(
-                c as f32 * TILE_SIZE,
-                r as f32 * TILE_SIZE,
-                TILE_SIZE,
-                TILE_SIZE,
-            );
-            let mesh = Mesh::new_rectangle(ctx, DrawMode::stroke(3.0), rect, Color::RED)?;
-            canvas.draw(&mesh, DrawParam::default());
         }
     
         // Draw pieces
