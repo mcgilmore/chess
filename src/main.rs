@@ -21,7 +21,7 @@ struct Args {
 }
 
 const BOARD_SIZE: usize = 8;
-const TILE_SIZE: f32 = 150.0;
+const TILE_SIZE: f32 = 120.0;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 enum PieceColor {
@@ -695,7 +695,7 @@ impl EventHandler<GameError> for ChessGame {
             for col in 0..BOARD_SIZE {
                 let is_light = (row + col) % 2 == 0;
                 let color = if is_light {
-                    Color::from_rgb(238, 238, 210)
+                    Color::from_rgb(161, 159, 151)
                 } else {
                     Color::from_rgb(118, 150, 86)
                 };
