@@ -243,7 +243,10 @@ impl ChessGame {
         // Two-square forward move (if pawn hasn't moved yet)
         if end_row == start_row + 2 * direction && end_col == start_col {
             if let Some(piece) = self.board.squares[start_row as usize][start_col as usize].occupant {
-                if !piece.has_moved && self.board.squares[(start_row + direction) as usize][start_col as usize].occupant.is_none()
+                if !piece.has_moved
+                    && self.board.squares[(start_row + direction) as usize][start_col as usize]
+                        .occupant
+                        .is_none()
                     && self.board.squares[end_row as usize][end_col as usize].occupant.is_none()
                 {
                     return true;
@@ -253,15 +256,16 @@ impl ChessGame {
     
         // Diagonal capture
         if end_row == start_row + direction && (end_col == start_col + 1 || end_col == start_col - 1) {
-            return self.board.squares[end_row as usize][end_col as usize].occupant.is_some();
-        }
-
-        if let Some((target_row, target_col)) = self.en_passant_target {
-            if end_row == target_row as isize
-                && end_col == target_col as isize
-                && (end_col as isize - start_col as isize).abs() == 1
-            {
+            // Regular capture
+            if self.board.squares[end_row as usize][end_col as usize].occupant.is_some() {
                 return true;
+            }
+    
+            // En passant capture
+            if let Some((target_row, target_col)) = self.en_passant_target {
+                if (end_row as usize, end_col as usize) == (target_row, target_col) {
+                    return true;
+                }
             }
         }
     
