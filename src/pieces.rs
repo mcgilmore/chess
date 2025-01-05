@@ -16,10 +16,11 @@ impl Pieces {
         piece_type: crate::PieceType,
         x: f32,
         y: f32,
+        tile_size: f32, 
     ) -> GameResult<()> {
         let mut mb = MeshBuilder::new();
-        // Scaling factors based on TILE_SIZE
-        let tile_size = crate::TILE_SIZE;
+        // Scaling factors based on tile_size
+        let tile_size = tile_size;
         let grid_square = tile_size / 10.0;
         let piece_x_offset = tile_size * 0.2;
         let piece_y_offset = tile_size * 0.15;

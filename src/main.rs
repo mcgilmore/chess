@@ -17,16 +17,19 @@ use pieces::Pieces;
 #[command(version = "0.1")]
 #[command(about = "Simple chess in rust with ggez")]
 struct Args {
-    /// Optional FEN string to initialize the game state
+    /// FEN string to initialize the game state
     #[arg(short, long)]
     fen: Option<String>,
+    /// Set the board size in pixels
+    #[arg(short, long, default_value = "800")]
+    board_size: f32,
     /// Play against an AI opponent as white (EXPERIMENTAL)
     #[arg(short, long, default_value = "false")]
     opponent: bool,
+    
 }
 
 const BOARD_SIZE: usize = 8;
-const TILE_SIZE: f32 = 120.0;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 enum PieceColor {
@@ -148,10 +151,11 @@ struct ChessGame {
     halfmove_clock: u32, // Number of halfmoves since the last capture or pawn move
     fullmove_number: u32, // Fullmove count (increments after Black's turn)
     has_ai_opponent: bool,
+    tile_size: f32,
 }
 
 impl ChessGame {
-    fn new(ctx: &mut Context, has_ai_opponent: bool) -> GameResult<Self> {
+    fn new(ctx: &mut Context, has_ai_opponent: bool, tile_size: f32) -> GameResult<Self> {
         let pieces = Pieces::new(); // Initialize the Pieces struct
         Ok(Self {
             board: ChessBoard::new_standard(),
@@ -166,6 +170,7 @@ impl ChessGame {
             fullmove_number: 1,
             pieces,
             has_ai_opponent,
+            tile_size,
         })
     }
 
@@ -173,8 +178,8 @@ impl ChessGame {
         if x < 0.0 || y < 0.0 {
             return None;
         }
-        let col = (x / TILE_SIZE) as usize;
-        let row = (y / TILE_SIZE) as usize;
+        let col = (x / self.tile_size) as usize;
+        let row = (y / self.tile_size) as usize;
         if row < BOARD_SIZE && col < BOARD_SIZE {
             Some((row, col))
         } else {
@@ -754,6 +759,7 @@ impl Clone for ChessGame {
             halfmove_clock: self.halfmove_clock,
             fullmove_number: self.fullmove_number,
             has_ai_opponent: self.has_ai_opponent,
+            tile_size: self.tile_size,
         }
     }
 }
@@ -822,10 +828,10 @@ impl EventHandler<GameError> for ChessGame {
                 }
 
                 let rect = Rect::new(
-                    col as f32 * TILE_SIZE,
-                    row as f32 * TILE_SIZE,
-                    TILE_SIZE,
-                    TILE_SIZE,
+                    col as f32 * self.tile_size,
+                    row as f32 * self.tile_size,
+                    self.tile_size,
+                    self.tile_size,
                 );
                 let mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), rect, color)?;
                 canvas.draw(&mesh, DrawParam::default());
@@ -836,9 +842,9 @@ impl EventHandler<GameError> for ChessGame {
         for row in 0..BOARD_SIZE {
             for col in 0..BOARD_SIZE {
                 if let Some(piece) = self.board.squares[row][col].occupant {
-                    let x = col as f32 * TILE_SIZE;
-                    let y = row as f32 * TILE_SIZE;
-                    self.pieces.draw_piece(ctx, &mut canvas, piece.color, piece.piece_type, x, y)?;
+                    let x = col as f32 * self.tile_size;
+                    let y = row as f32 * self.tile_size;
+                    self.pieces.draw_piece(ctx, &mut canvas, piece.color, piece.piece_type, x, y, self.tile_size)?;
                 }
             }
         }
@@ -961,10 +967,10 @@ fn main() -> GameResult {
 
     let (mut ctx, event_loop) = ContextBuilder::new("chess", "YourName")
         .window_setup(WindowSetup::default().title("Chess"))
-        .window_mode(WindowMode::default().dimensions(TILE_SIZE * 8.0, TILE_SIZE * 8.0)) //Window size based on tile sizes
+        .window_mode(WindowMode::default().dimensions(args.board_size, args.board_size)) //Window size based on tile sizes
         .build()?;
 
-        let mut game = ChessGame::new(&mut ctx, args.opponent)?;
+    let mut game = ChessGame::new(&mut ctx, args.opponent, args.board_size/8.0)?;
 
     if let Some(fen) = args.fen {
         match game.from_fen(&fen) {
