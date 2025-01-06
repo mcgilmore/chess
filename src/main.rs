@@ -413,6 +413,28 @@ impl ChessGame {
         self.board.squares[start_row][rook_end_col].occupant = rook;
     }
 
+    fn promote_pawn(&mut self, position: (usize, usize), new_piece_type: PieceType) {
+        let (row, col) = position;
+        if let Some(piece) = self.board.squares[row][col].occupant {
+            if piece.piece_type == PieceType::Pawn {
+                // Create a new piece with the promoted type
+                let promoted_piece = Piece {
+                    piece_type: new_piece_type,
+                    color: piece.color,
+                    has_moved: piece.has_moved,
+                };
+    
+                // Replace the occupant with the promoted piece
+                self.board.squares[row][col].occupant = Some(promoted_piece);
+                self.needs_redraw = true;
+            } else {
+                println!("Error: Piece at {:?} is not a pawn!", position);
+            }
+        } else {
+            println!("Error: No piece found at {:?}", position);
+        }
+    }
+
     fn path_is_clear(&self, start: (usize, usize), end: (usize, usize)) -> bool {
         let (start_row, start_col) = start;
         let (end_row, end_col) = end;
@@ -1067,6 +1089,8 @@ impl EventHandler<GameError> for ChessGame {
                 }
             }
         }
+
+
     
         canvas.finish(ctx)?;
         Ok(())
@@ -1107,8 +1131,12 @@ impl EventHandler<GameError> for ChessGame {
                         self.needs_redraw = true;
                     } else if self.validate_move(selected, (row, col)) {
                         let mut piece = self.board.squares[selected.0][selected.1].occupant.take().unwrap();
+
                         piece.has_moved = true;
-    
+
+                        // Update the target square with the pawn
+                        self.board.squares[row][col].occupant = Some(piece);
+
                         // Update en passant target for pawns moving two squares
                         if piece.piece_type == PieceType::Pawn && (selected.0 as isize - row as isize).abs() == 2 {
                             self.en_passant_target = Some(((selected.0 + row) / 2, col));
@@ -1119,6 +1147,14 @@ impl EventHandler<GameError> for ChessGame {
                         if piece.piece_type == PieceType::Pawn && Some((row, col)) == self.en_passant_target {
                             let captured_pawn_row = if piece.color == PieceColor::White { row + 1 } else { row - 1 };
                             self.board.squares[captured_pawn_row][col].occupant = None;
+                        }
+
+                        if piece.piece_type == PieceType::Pawn {
+                            let promotion_row = if piece.color == PieceColor::White { 0 } else { 7 };
+                        
+                            if row == promotion_row {
+                                self.promote_pawn((row, col), PieceType::Queen); // Trigger promotion
+                            }
                         }
     
                         // Update castling rights (if a rook or king moves)
@@ -1140,7 +1176,6 @@ impl EventHandler<GameError> for ChessGame {
                             self.perform_castling(selected, (row, col));
                         }
     
-                        self.board.squares[row][col].occupant = Some(piece);
                         self.turn = match self.turn {
                             PieceColor::White => PieceColor::Black,
                             PieceColor::Black => PieceColor::White,

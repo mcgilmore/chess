@@ -343,15 +343,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
 
 [[package]]
-name = "chess"
-version = "0.1.0"
-dependencies = [
- "clap",
- "ggez",
- "rand",
-]
-
-[[package]]
 name = "clap"
 version = "4.5.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -615,6 +606,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad9cdb4b747e485a12abb0e6566612956c7a1bafa3bdb8d682c5b6d403589e48"
 dependencies = [
  "num-traits",
+]
+
+[[package]]
+name = "ez-chess"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "ggez",
+ "rand",
 ]
 
 [[package]]
