@@ -1,6 +1,6 @@
 [package]
-name = "ez-chess"
-version = "0.1.0"
+name = "itsjustchess"
+version = "0.0.1"
 edition = "2021"
 
 [dependencies]

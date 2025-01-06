@@ -1,7 +1,7 @@
+use ggez::conf::{WindowMode, WindowSetup};
 use ggez::event::{self, EventHandler, MouseButton};
 use ggez::graphics::{Canvas, Color, DrawMode, DrawParam, Mesh, Rect};
 use ggez::{Context, ContextBuilder, GameError, GameResult};
-use ggez::conf::{WindowMode, WindowSetup};
 
 use clap::Parser;
 
@@ -14,8 +14,8 @@ use pieces::Pieces;
 #[derive(Parser)]
 #[command(name = "chess")]
 #[command(author = "Dr. Hugh Jass")]
-#[command(version = "0.1")]
-#[command(about = "Simple chess in rust with ggez")]
+#[command(version = "0.0.1")]
+#[command(about = "It's just chess")]
 struct Args {
     /// FEN string to initialize the game state
     #[arg(short, long)]
@@ -26,7 +26,6 @@ struct Args {
     /// Play against an AI opponent as white (EXPERIMENTAL)
     #[arg(short, long, default_value = "false")]
     opponent: bool,
-    
 }
 
 const BOARD_SIZE: usize = 8;
@@ -72,7 +71,7 @@ impl ChessBoard {
 
     fn new_standard() -> Self {
         let mut board = Self::empty();
-    
+
         // Place pawns
         for file in 0..BOARD_SIZE {
             board.squares[6][file].occupant = Some(Piece {
@@ -86,7 +85,7 @@ impl ChessBoard {
                 has_moved: false,
             });
         }
-    
+
         // Place back ranks with `has_moved` set to false
         fn place_back_rank(row: usize, color: PieceColor, board: &mut ChessBoard) {
             board.squares[row][0].occupant = Some(Piece {
@@ -130,13 +129,13 @@ impl ChessBoard {
                 has_moved: false,
             });
         }
-    
+
         place_back_rank(0, PieceColor::Black, &mut board);
         place_back_rank(7, PieceColor::White, &mut board);
-    
+
         board
     }
-} 
+}
 
 struct ChessGame {
     board: ChessBoard,
@@ -146,7 +145,7 @@ struct ChessGame {
     pieces: Pieces,
     turn: PieceColor,
     needs_redraw: bool,
-    castling_rights: String, // e.g., "KQkq", "-" if none
+    castling_rights: String,                   // e.g., "KQkq", "-" if none
     en_passant_target: Option<(usize, usize)>, // Square where en passant is possible
     halfmove_clock: u32, // Number of halfmoves since the last capture or pawn move
     fullmove_number: u32, // Fullmove count (increments after Black's turn)
@@ -188,40 +187,39 @@ impl ChessGame {
     }
 
     // Checks if a move is valid based on piece type, turn, and rules.
-    fn validate_move(
-        &self,
-        start: (usize, usize),
-        end: (usize, usize),
-    ) -> bool {
+    fn validate_move(&self, start: (usize, usize), end: (usize, usize)) -> bool {
         let (start_row, start_col) = start;
         let (end_row, end_col) = end;
-    
+
         // Ensure both squares are on the board
-        if start_row >= BOARD_SIZE || start_col >= BOARD_SIZE ||
-           end_row >= BOARD_SIZE || end_col >= BOARD_SIZE {
+        if start_row >= BOARD_SIZE
+            || start_col >= BOARD_SIZE
+            || end_row >= BOARD_SIZE
+            || end_col >= BOARD_SIZE
+        {
             return false;
         }
-    
+
         let start_square = self.board.squares[start_row][start_col];
         let end_square = self.board.squares[end_row][end_col];
-    
+
         let piece = match start_square.occupant {
             Some(p) => p,
             None => return false,
         };
-    
+
         // Ensure it's the correct player's turn
         if piece.color != self.turn {
             return false;
         }
-    
+
         // Ensure the end square is not occupied by a friendly piece
         if let Some(occupant) = end_square.occupant {
             if occupant.color == piece.color {
                 return false;
             }
         }
-    
+
         // Validate movement based on piece type and return the result
         let is_valid = match piece.piece_type {
             PieceType::Pawn => self.validate_pawn_move(start, end, piece.color),
@@ -231,57 +229,75 @@ impl ChessGame {
             PieceType::Queen => self.validate_queen_move(start, end),
             PieceType::King => self.validate_king_move(start, end),
         };
-    
+
         // Simulate the move to ensure the king is not left in check
         if is_valid {
             let mut simulated_game = self.clone();
-            let piece = simulated_game.board.squares[start.0][start.1].occupant.take().unwrap();
+            let piece = simulated_game.board.squares[start.0][start.1]
+                .occupant
+                .take()
+                .unwrap();
             simulated_game.board.squares[end.0][end.1].occupant = Some(piece);
-    
+
             if simulated_game.is_king_in_check(self.turn) {
                 return false; // Move is invalid if it leaves the king in check
             }
         }
-    
+
         is_valid
     }
 
-    fn validate_pawn_move(&self, start: (usize, usize), end: (usize, usize), color: PieceColor) -> bool {
+    fn validate_pawn_move(
+        &self,
+        start: (usize, usize),
+        end: (usize, usize),
+        color: PieceColor,
+    ) -> bool {
         let (start_row, start_col) = start;
         let (end_row, end_col) = end;
-    
+
         let direction = if color == PieceColor::White { -1 } else { 1 };
         let start_row = start_row as isize;
         let start_col = start_col as isize;
         let end_row = end_row as isize;
         let end_col = end_col as isize;
-    
+
         // One-square forward move
         if end_row == start_row + direction && end_col == start_col {
-            return self.board.squares[end_row as usize][end_col as usize].occupant.is_none();
+            return self.board.squares[end_row as usize][end_col as usize]
+                .occupant
+                .is_none();
         }
-    
+
         // Two-square forward move (if pawn hasn't moved yet)
         if end_row == start_row + 2 * direction && end_col == start_col {
-            if let Some(piece) = self.board.squares[start_row as usize][start_col as usize].occupant {
+            if let Some(piece) = self.board.squares[start_row as usize][start_col as usize].occupant
+            {
                 if !piece.has_moved
                     && self.board.squares[(start_row + direction) as usize][start_col as usize]
                         .occupant
                         .is_none()
-                    && self.board.squares[end_row as usize][end_col as usize].occupant.is_none()
+                    && self.board.squares[end_row as usize][end_col as usize]
+                        .occupant
+                        .is_none()
                 {
                     return true;
                 }
             }
         }
-    
+
         // Diagonal capture
-        if end_row == start_row + direction && (end_col == start_col + 1 || end_col == start_col - 1) {
+        if end_row == start_row + direction
+            && (end_col == start_col + 1 || end_col == start_col - 1)
+        {
             // Regular capture
-            if self.board.squares[end_row as usize][end_col as usize].occupant.is_some() {
+            if self.board.squares[end_row as usize][end_col as usize]
+                .occupant
+                .is_some()
+            {
                 return true;
             }
-    
+
             // En passant capture
             if let Some((target_row, target_col)) = self.en_passant_target {
                 if (end_row as usize, end_col as usize) == (target_row, target_col) {
@@ -289,7 +305,7 @@ impl ChessGame {
                 }
             }
         }
-    
+
         false
     }
 
@@ -337,29 +353,32 @@ impl ChessGame {
     fn validate_king_move(&self, start: (usize, usize), end: (usize, usize)) -> bool {
         let (start_row, start_col) = start;
         let (end_row, end_col) = end;
-    
+
         // Check if the move is within one square
         let row_diff = (start_row as isize - end_row as isize).abs();
         let col_diff = (start_col as isize - end_col as isize).abs();
-    
+
         if row_diff <= 1 && col_diff <= 1 {
             // Simulate the move
             let mut simulated_game = self.clone();
-            let piece = simulated_game.board.squares[start_row][start_col].occupant.take().unwrap();
+            let piece = simulated_game.board.squares[start_row][start_col]
+                .occupant
+                .take()
+                .unwrap();
             simulated_game.board.squares[end_row][end_col].occupant = Some(piece);
-    
+
             if simulated_game.is_square_attacked((end_row, end_col), self.turn) {
                 return false; // Move is invalid if the king would be in check
             }
-    
+
             return true;
         }
-    
+
         // Check for castling
         if self.validate_king_castling(start, end) {
             return true;
         }
-    
+
         false
     }
 
@@ -371,9 +390,17 @@ impl ChessGame {
         if start_row == end_row && (end_col as isize - start_col as isize).abs() == 2 {
             let is_king_side = end_col > start_col;
             let castling_right = if self.turn == PieceColor::White {
-                if is_king_side { "K" } else { "Q" }
+                if is_king_side {
+                    "K"
+                } else {
+                    "Q"
+                }
             } else {
-                if is_king_side { "k" } else { "q" }
+                if is_king_side {
+                    "k"
+                } else {
+                    "q"
+                }
             };
 
             if !self.castling_rights.contains(castling_right) {
@@ -409,7 +436,9 @@ impl ChessGame {
         let rook_start_col = if is_king_side { 7 } else { 0 };
         let rook_end_col = if is_king_side { end.1 - 1 } else { end.1 + 1 };
 
-        let rook = self.board.squares[start_row][rook_start_col].occupant.take();
+        let rook = self.board.squares[start_row][rook_start_col]
+            .occupant
+            .take();
         self.board.squares[start_row][rook_end_col].occupant = rook;
     }
 
@@ -423,7 +452,7 @@ impl ChessGame {
                     color: piece.color,
                     has_moved: piece.has_moved,
                 };
-    
+
                 // Replace the occupant with the promoted piece
                 self.board.squares[row][col].occupant = Some(promoted_piece);
                 self.needs_redraw = true;
@@ -446,7 +475,10 @@ impl ChessGame {
         let mut current_col = start_col as isize + col_step;
 
         while current_row != end_row as isize || current_col != end_col as isize {
-            if self.board.squares[current_row as usize][current_col as usize].occupant.is_some() {
+            if self.board.squares[current_row as usize][current_col as usize]
+                .occupant
+                .is_some()
+            {
                 return false;
             }
 
@@ -488,17 +520,18 @@ impl ChessGame {
 
     fn is_king_in_check(&self, color: PieceColor) -> bool {
         let (king_row, king_col) = self.find_king(color).unwrap();
-    
+
         for row in 0..BOARD_SIZE {
             for col in 0..BOARD_SIZE {
                 if let Some(piece) = self.board.squares[row][col].occupant {
-                    if piece.color != color && self.validate_move((row, col), (king_row, king_col)) {
+                    if piece.color != color && self.validate_move((row, col), (king_row, king_col))
+                    {
                         return true;
                     }
                 }
             }
         }
-    
+
         false
     }
 
@@ -551,7 +584,11 @@ impl ChessGame {
 
         match moving_piece.piece_type {
             PieceType::Pawn => {
-                let direction = if moving_piece.color == PieceColor::White { -1 } else { 1 };
+                let direction = if moving_piece.color == PieceColor::White {
+                    -1
+                } else {
+                    1
+                };
                 let advancement = (end_row as isize - start_row as isize) * direction;
                 let central_bonus = if end_col == 3 || end_col == 4 { 1 } else { 0 };
                 advancement as i32 + central_bonus
@@ -572,11 +609,7 @@ impl ChessGame {
                 open_diagonal_bonus
             }
             PieceType::Rook => {
-                let open_file_bonus = if self.is_file_open(end_col) {
-                    3
-                } else {
-                    0
-                };
+                let open_file_bonus = if self.is_file_open(end_col) { 3 } else { 0 };
                 open_file_bonus
             }
             PieceType::Queen => {
@@ -587,11 +620,12 @@ impl ChessGame {
                 }
             }
             PieceType::King => {
-                let safety_penalty = if self.is_square_attacked((end_row, end_col), moving_piece.color) {
-                    -10
-                } else {
-                    0
-                };
+                let safety_penalty =
+                    if self.is_square_attacked((end_row, end_col), moving_piece.color) {
+                        -10
+                    } else {
+                        0
+                    };
                 safety_penalty
             }
         }
@@ -608,7 +642,7 @@ impl ChessGame {
 
     fn is_square_attacked(&self, square: (usize, usize), color: PieceColor) -> bool {
         let (row, col) = square;
-    
+
         for r in 0..BOARD_SIZE {
             for c in 0..BOARD_SIZE {
                 if let Some(piece) = self.board.squares[r][c].occupant {
@@ -617,7 +651,11 @@ impl ChessGame {
                         match piece.piece_type {
                             PieceType::Pawn => {
                                 // Pawns attack diagonally
-                                let direction = if piece.color == PieceColor::White { -1 } else { 1 };
+                                let direction = if piece.color == PieceColor::White {
+                                    -1
+                                } else {
+                                    1
+                                };
                                 let attack_positions = [
                                     (r as isize + direction, c as isize - 1),
                                     (r as isize + direction, c as isize + 1),
@@ -631,18 +669,27 @@ impl ChessGame {
                             PieceType::Knight => {
                                 // Knights have a fixed attack pattern
                                 let knight_moves = [
-                                    (-2, -1), (-2, 1), (2, -1), (2, 1),
-                                    (-1, -2), (-1, 2), (1, -2), (1, 2),
+                                    (-2, -1),
+                                    (-2, 1),
+                                    (2, -1),
+                                    (2, 1),
+                                    (-1, -2),
+                                    (-1, 2),
+                                    (1, -2),
+                                    (1, 2),
                                 ];
                                 for &(dr, dc) in &knight_moves {
-                                    if r as isize + dr == row as isize && c as isize + dc == col as isize {
+                                    if r as isize + dr == row as isize
+                                        && c as isize + dc == col as isize
+                                    {
                                         return true;
                                     }
                                 }
                             }
                             PieceType::Bishop => {
                                 // Bishops attack diagonally
-                                if (row as isize - r as isize).abs() == (col as isize - c as isize).abs()
+                                if (row as isize - r as isize).abs()
+                                    == (col as isize - c as isize).abs()
                                     && self.path_is_clear((r, c), (row, col))
                                 {
                                     return true;
@@ -650,14 +697,17 @@ impl ChessGame {
                             }
                             PieceType::Rook => {
                                 // Rooks attack in straight lines
-                                if (r == row || c == col) && self.path_is_clear((r, c), (row, col)) {
+                                if (r == row || c == col) && self.path_is_clear((r, c), (row, col))
+                                {
                                     return true;
                                 }
                             }
                             PieceType::Queen => {
                                 // Queens attack both like rooks and bishops
-                                if ((row as isize - r as isize).abs() == (col as isize - c as isize).abs()
-                                    || r == row || c == col)
+                                if ((row as isize - r as isize).abs()
+                                    == (col as isize - c as isize).abs()
+                                    || r == row
+                                    || c == col)
                                     && self.path_is_clear((r, c), (row, col))
                                 {
                                     return true;
@@ -676,7 +726,7 @@ impl ChessGame {
                 }
             }
         }
-    
+
         false
     }
 
@@ -693,7 +743,10 @@ impl ChessGame {
 
             for &(r, c) in &positions {
                 if r >= 0 && r < BOARD_SIZE as isize && c >= 0 && c < BOARD_SIZE as isize {
-                    if self.board.squares[r as usize][c as usize].occupant.is_some() {
+                    if self.board.squares[r as usize][c as usize]
+                        .occupant
+                        .is_some()
+                    {
                         return false;
                     }
                 }
@@ -739,9 +792,10 @@ impl ChessGame {
         } else {
             0
         };
-    
+
         // Value of the moving piece
-        let moving_piece_value = if let Some(piece) = self.board.squares[start.0][start.1].occupant {
+        let moving_piece_value = if let Some(piece) = self.board.squares[start.0][start.1].occupant
+        {
             match piece.piece_type {
                 PieceType::Pawn => 1,
                 PieceType::Knight | PieceType::Bishop => 3,
@@ -768,13 +822,13 @@ impl ChessGame {
         };
 
         let positional_value = self.calculate_positional_value(start, end, moving_piece);
-    
+
         capture_value + moving_piece_value + king_penalty + development_bonus + positional_value
     }
 
     fn choose_ai_move(&self) -> Option<((usize, usize), (usize, usize))> {
         let valid_moves = self.generate_valid_moves(self.turn);
-    
+
         // Evaluate moves, prioritizing non-king moves and strategic positions
         valid_moves
             .iter()
@@ -785,16 +839,19 @@ impl ChessGame {
 
     fn ai_turn(&mut self) -> bool {
         if let Some((start, end)) = self.choose_ai_move() {
-            let mut piece = self.board.squares[start.0][start.1].occupant.take().unwrap();
+            let mut piece = self.board.squares[start.0][start.1]
+                .occupant
+                .take()
+                .unwrap();
             piece.has_moved = true;
             self.board.squares[end.0][end.1].occupant = Some(piece);
-    
+
             // Update turn
             self.turn = match self.turn {
                 PieceColor::White => PieceColor::Black,
                 PieceColor::Black => PieceColor::White,
             };
-    
+
             self.needs_redraw = true;
             true
         } else {
@@ -832,7 +889,11 @@ impl ChessGame {
 
         // Add active color
         fen.push(' ');
-        fen.push(if self.turn == PieceColor::White { 'w' } else { 'b' });
+        fen.push(if self.turn == PieceColor::White {
+            'w'
+        } else {
+            'b'
+        });
 
         // Add castling rights
         fen.push(' ');
@@ -881,8 +942,11 @@ impl ChessGame {
                         col += 1;
                     }
                 } else {
-                    let piece = char_to_piece(ch).ok_or_else(|| format!("Invalid FEN: Unknown piece '{ch}'"))?;
-                    self.board.squares[row][col] = Square { occupant: Some(piece) };
+                    let piece = char_to_piece(ch)
+                        .ok_or_else(|| format!("Invalid FEN: Unknown piece '{ch}'"))?;
+                    self.board.squares[row][col] = Square {
+                        occupant: Some(piece),
+                    };
                     col += 1;
                 }
             }
@@ -910,10 +974,14 @@ impl ChessGame {
         };
 
         // Parse halfmove clock
-        self.halfmove_clock = parts[4].parse().map_err(|_| "Invalid FEN: Invalid halfmove clock".to_string())?;
+        self.halfmove_clock = parts[4]
+            .parse()
+            .map_err(|_| "Invalid FEN: Invalid halfmove clock".to_string())?;
 
         // Parse fullmove number
-        self.fullmove_number = parts[5].parse().map_err(|_| "Invalid FEN: Invalid fullmove number".to_string())?;
+        self.fullmove_number = parts[5]
+            .parse()
+            .map_err(|_| "Invalid FEN: Invalid fullmove number".to_string())?;
 
         Ok(())
     }
@@ -1032,9 +1100,9 @@ impl EventHandler<GameError> for ChessGame {
         if !self.needs_redraw {
             return Ok(());
         }
-    
+
         let mut canvas = Canvas::from_frame(ctx, Color::from_rgb(34, 139, 34));
-    
+
         // Draw the board squares
         for row in 0..BOARD_SIZE {
             for col in 0..BOARD_SIZE {
@@ -1064,7 +1132,7 @@ impl EventHandler<GameError> for ChessGame {
                 };
 
                 // Highlight selected square; overrides other colours
-                if Some((row, col)) == self.selected{
+                if Some((row, col)) == self.selected {
                     color = Color::from_rgb(237, 202, 142);
                 }
 
@@ -1078,20 +1146,26 @@ impl EventHandler<GameError> for ChessGame {
                 canvas.draw(&mesh, DrawParam::default());
             }
         }
-    
+
         // Draw pieces
         for row in 0..BOARD_SIZE {
             for col in 0..BOARD_SIZE {
                 if let Some(piece) = self.board.squares[row][col].occupant {
                     let x = col as f32 * self.tile_size;
                     let y = row as f32 * self.tile_size;
-                    self.pieces.draw_piece(ctx, &mut canvas, piece.color, piece.piece_type, x, y, self.tile_size)?;
+                    self.pieces.draw_piece(
+                        ctx,
+                        &mut canvas,
+                        piece.color,
+                        piece.piece_type,
+                        x,
+                        y,
+                        self.tile_size,
+                    )?;
                 }
             }
         }
 
-
-    
         canvas.finish(ctx)?;
         Ok(())
     }
@@ -1130,7 +1204,10 @@ impl EventHandler<GameError> for ChessGame {
                         self.valid_moves.clear();
                         self.needs_redraw = true;
                     } else if self.validate_move(selected, (row, col)) {
-                        let mut piece = self.board.squares[selected.0][selected.1].occupant.take().unwrap();
+                        let mut piece = self.board.squares[selected.0][selected.1]
+                            .occupant
+                            .take()
+                            .unwrap();
 
                         piece.has_moved = true;
 
@@ -1138,32 +1215,49 @@ impl EventHandler<GameError> for ChessGame {
                         self.board.squares[row][col].occupant = Some(piece);
 
                         // Update en passant target for pawns moving two squares
-                        if piece.piece_type == PieceType::Pawn && (selected.0 as isize - row as isize).abs() == 2 {
+                        if piece.piece_type == PieceType::Pawn
+                            && (selected.0 as isize - row as isize).abs() == 2
+                        {
                             self.en_passant_target = Some(((selected.0 + row) / 2, col));
                         } else {
                             self.en_passant_target = None;
                         }
-    
-                        if piece.piece_type == PieceType::Pawn && Some((row, col)) == self.en_passant_target {
-                            let captured_pawn_row = if piece.color == PieceColor::White { row + 1 } else { row - 1 };
+
+                        if piece.piece_type == PieceType::Pawn
+                            && Some((row, col)) == self.en_passant_target
+                        {
+                            let captured_pawn_row = if piece.color == PieceColor::White {
+                                row + 1
+                            } else {
+                                row - 1
+                            };
                             self.board.squares[captured_pawn_row][col].occupant = None;
                         }
 
                         if piece.piece_type == PieceType::Pawn {
-                            let promotion_row = if piece.color == PieceColor::White { 0 } else { 7 };
-                        
+                            let promotion_row = if piece.color == PieceColor::White {
+                                0
+                            } else {
+                                7
+                            };
+
                             if row == promotion_row {
-                                self.promote_pawn((row, col), PieceType::Queen); // Trigger promotion
+                                self.promote_pawn((row, col), PieceType::Queen);
+                                // Trigger promotion
                             }
                         }
-    
+
                         // Update castling rights (if a rook or king moves)
-                        if piece.piece_type == PieceType::Rook || piece.piece_type == PieceType::King {
+                        if piece.piece_type == PieceType::Rook
+                            || piece.piece_type == PieceType::King
+                        {
                             self.update_castling_rights(selected);
                         }
-    
+
                         // Update move counters
-                        if piece.piece_type == PieceType::Pawn || self.board.squares[row][col].occupant.is_some() {
+                        if piece.piece_type == PieceType::Pawn
+                            || self.board.squares[row][col].occupant.is_some()
+                        {
                             self.halfmove_clock = 0;
                         } else {
                             self.halfmove_clock += 1;
@@ -1171,11 +1265,13 @@ impl EventHandler<GameError> for ChessGame {
                         if self.turn == PieceColor::Black {
                             self.fullmove_number += 1;
                         }
-    
-                        if piece.piece_type == PieceType::King && (selected.1 as isize - col as isize).abs() == 2 {
+
+                        if piece.piece_type == PieceType::King
+                            && (selected.1 as isize - col as isize).abs() == 2
+                        {
                             self.perform_castling(selected, (row, col));
                         }
-    
+
                         self.turn = match self.turn {
                             PieceColor::White => PieceColor::Black,
                             PieceColor::Black => PieceColor::White,
@@ -1224,7 +1320,7 @@ fn main() -> GameResult {
         .window_mode(WindowMode::default().dimensions(args.board_size, args.board_size)) //Window size based on tile sizes
         .build()?;
 
-    let mut game = ChessGame::new(&mut ctx, args.opponent, args.board_size/8.0)?;
+    let mut game = ChessGame::new(&mut ctx, args.opponent, args.board_size / 8.0)?;
 
     if let Some(fen) = args.fen {
         match game.from_fen(&fen) {
