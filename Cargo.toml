@@ -1,5 +1,7 @@
 [package]
 name = "itsjustchess"
+description = "A simple chess game: it's just chess."
+license = "GPL-3.0"
 version = "0.0.1"
 edition = "2021"
 
