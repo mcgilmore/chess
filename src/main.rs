@@ -1172,9 +1172,8 @@ impl EventHandler<GameError> for ChessGame {
 
         if let Some((row, col)) = self.promotion_square {
             if let Some(piece) = self.board.squares[row][col].occupant {
-                let pawn_color = piece.color; // Dynamically get the pawn's color
+                let pawn_color = piece.color; 
                 
-                // Use this `pawn_color` when drawing the promotion UI
                 let options = [
                     PieceType::Queen,
                     PieceType::Rook,
@@ -1182,22 +1181,35 @@ impl EventHandler<GameError> for ChessGame {
                     PieceType::Knight,
                 ];
         
-                // Rectangle dimensions to cover all options
+                // Determine the total width of the options
                 let total_width = self.tile_size * options.len() as f32;
-                let rect_x = (col as f32 - 1.5) * self.tile_size; // Center horizontally. TODO: take into account board sides...
-                let rect_y = row as f32 * self.tile_size;
-
+        
+                // Calculate the horizontal starting point based on board edges
+                let mut rect_x = (col as f32 - 1.5) * self.tile_size; // Default position
+                if rect_x < 0.0 {
+                    rect_x = 0.0; // Align to the left edge of the board
+                } else if rect_x + total_width > self.tile_size * BOARD_SIZE as f32 {
+                    rect_x = self.tile_size * BOARD_SIZE as f32 - total_width; // Align to the right edge
+                }
+        
+                // Vertical position depends on the pawn's color (top or bottom of the board)
+                let rect_y = if piece.color == PieceColor::White {
+                    row as f32 * self.tile_size
+                } else {
+                    (row as f32 + 1.0) * self.tile_size - self.tile_size // One row below for Black
+                };
+        
                 // Draw a background rectangle
                 let rect = Rect::new(rect_x, rect_y, total_width, self.tile_size);
-                let background_color = Color::from_rgba(201, 195, 195, 230); 
+                let background_color = Color::from_rgba(196, 192, 188, 150);
                 let background_mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), rect, background_color)?;
                 canvas.draw(&background_mesh, DrawParam::default());
-
+        
                 // Draw the promotion options on top of the background
                 for (i, piece_type) in options.iter().enumerate() {
-                    let x = (col as f32 + i as f32 - 1.5) * self.tile_size; // Offset horizontally
-                    let y = row as f32 * self.tile_size;
-
+                    let x = rect_x + i as f32 * self.tile_size; // Adjust for horizontal positioning
+                    let y = rect_y;
+        
                     self.pieces.draw_piece(
                         ctx,
                         &mut canvas,
@@ -1242,27 +1254,48 @@ impl EventHandler<GameError> for ChessGame {
     ) -> Result<(), GameError> {
         if button == MouseButton::Left {
             if let Some((row, col)) = self.promotion_square {
-                // Calculate which promotion piece was selected
-                let tile_size = self.tile_size;
+                // Determine the total width of the promotion options
                 let options = [
                     PieceType::Queen,
                     PieceType::Rook,
                     PieceType::Bishop,
                     PieceType::Knight,
                 ];
+                let total_width = self.tile_size * options.len() as f32;
             
+                // Calculate the horizontal starting point based on board edges
+                let mut rect_x = (col as f32 - 1.5) * self.tile_size; // Default position
+                if rect_x < 0.0 {
+                    rect_x = 0.0; // Align to the left edge of the board
+                } else if rect_x + total_width > self.tile_size * BOARD_SIZE as f32 {
+                    rect_x = self.tile_size * BOARD_SIZE as f32 - total_width; // Align to the right edge
+                }
+            
+                // Vertical position depends on the pawn's color
+                let rect_y = if let Some(piece) = self.board.squares[row][col].occupant {
+                    if piece.color == PieceColor::White {
+                        row as f32 * self.tile_size
+                    } else {
+                        (row as f32 + 1.0) * self.tile_size - self.tile_size // Below for Black
+                    }
+                } else {
+                    return Ok(()); // No piece at promotion square; ignore
+                };
+            
+                // Check if the click falls within one of the promotion options
                 for (i, piece_type) in options.iter().enumerate() {
-                    let promotion_x = (col as f32 + i as f32 - 1.5) * tile_size;
-                    let promotion_y = row as f32 * tile_size;
+                    let option_x = rect_x + i as f32 * self.tile_size;
+                    let option_y = rect_y;
             
-                    if promotion_x <= x && x < promotion_x + tile_size && promotion_y <= y && y < promotion_y + tile_size {
-                        println!("Promoting to {:?}", piece_type);
+                    if option_x <= x && x < option_x + self.tile_size && option_y <= y && y < option_y + self.tile_size {
                         self.promote_pawn((row, col), *piece_type); // Promote to the selected piece
                         self.promotion_square = None; // Clear promotion state
+                        self.needs_redraw = true;
                         return Ok(());
                     }
                 }
             }
+
             if let Some((row, col)) = self.coords_to_square(x, y) {
                 if let Some(selected) = self.selected {
                     if selected == (row, col) {

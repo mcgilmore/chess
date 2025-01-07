@@ -1,6 +1,6 @@
-# chess v0.1.0
+# itsjustchess v0.1.0
 
-Basic chess game in rust with ggez
+Chess game in rust with ggez
 
 # Info
 - Use --help for command line options
