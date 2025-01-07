@@ -1,4 +1,4 @@
-# chess
+# chess v0.1.0
 
 Basic chess game in rust with ggez
 
