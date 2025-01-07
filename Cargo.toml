@@ -2,7 +2,7 @@
 name = "itsjustchess"
 description = "A simple chess game: it's just chess."
 license = "GPL-3.0"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2021"
 
 [dependencies]
