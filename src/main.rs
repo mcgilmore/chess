@@ -145,12 +145,13 @@ struct ChessGame {
     pieces: Pieces,
     turn: PieceColor,
     needs_redraw: bool,
-    castling_rights: String,                   // e.g., "KQkq", "-" if none
+    castling_rights: String,
     en_passant_target: Option<(usize, usize)>, // Square where en passant is possible
     halfmove_clock: u32, // Number of halfmoves since the last capture or pawn move
     fullmove_number: u32, // Fullmove count (increments after Black's turn)
     has_ai_opponent: bool,
     tile_size: f32,
+    promotion_square: Option<(usize, usize)>,
 }
 
 impl ChessGame {
@@ -170,6 +171,7 @@ impl ChessGame {
             pieces,
             has_ai_opponent,
             tile_size,
+            promotion_square: None,
         })
     }
 
@@ -1069,6 +1071,7 @@ impl Clone for ChessGame {
             fullmove_number: self.fullmove_number,
             has_ai_opponent: self.has_ai_opponent,
             tile_size: self.tile_size,
+            promotion_square: self.promotion_square,
         }
     }
 }
@@ -1142,6 +1145,7 @@ impl EventHandler<GameError> for ChessGame {
                     self.tile_size,
                     self.tile_size,
                 );
+
                 let mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), rect, color)?;
                 canvas.draw(&mesh, DrawParam::default());
             }
@@ -1158,6 +1162,47 @@ impl EventHandler<GameError> for ChessGame {
                         &mut canvas,
                         piece.color,
                         piece.piece_type,
+                        x,
+                        y,
+                        self.tile_size,
+                    )?;
+                }
+            }
+        }
+
+        if let Some((row, col)) = self.promotion_square {
+            if let Some(piece) = self.board.squares[row][col].occupant {
+                let pawn_color = piece.color; // Dynamically get the pawn's color
+                
+                // Use this `pawn_color` when drawing the promotion UI
+                let options = [
+                    PieceType::Queen,
+                    PieceType::Rook,
+                    PieceType::Bishop,
+                    PieceType::Knight,
+                ];
+        
+                // Rectangle dimensions to cover all options
+                let total_width = self.tile_size * options.len() as f32;
+                let rect_x = (col as f32 - 1.5) * self.tile_size; // Center horizontally. TODO: take into account board sides...
+                let rect_y = row as f32 * self.tile_size;
+
+                // Draw a background rectangle
+                let rect = Rect::new(rect_x, rect_y, total_width, self.tile_size);
+                let background_color = Color::from_rgba(201, 195, 195, 230); 
+                let background_mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), rect, background_color)?;
+                canvas.draw(&background_mesh, DrawParam::default());
+
+                // Draw the promotion options on top of the background
+                for (i, piece_type) in options.iter().enumerate() {
+                    let x = (col as f32 + i as f32 - 1.5) * self.tile_size; // Offset horizontally
+                    let y = row as f32 * self.tile_size;
+
+                    self.pieces.draw_piece(
+                        ctx,
+                        &mut canvas,
+                        pawn_color, // Use the pawn's actual color
+                        *piece_type,
                         x,
                         y,
                         self.tile_size,
@@ -1196,6 +1241,28 @@ impl EventHandler<GameError> for ChessGame {
         y: f32,
     ) -> Result<(), GameError> {
         if button == MouseButton::Left {
+            if let Some((row, col)) = self.promotion_square {
+                // Calculate which promotion piece was selected
+                let tile_size = self.tile_size;
+                let options = [
+                    PieceType::Queen,
+                    PieceType::Rook,
+                    PieceType::Bishop,
+                    PieceType::Knight,
+                ];
+            
+                for (i, piece_type) in options.iter().enumerate() {
+                    let promotion_x = (col as f32 + i as f32 - 1.5) * tile_size;
+                    let promotion_y = row as f32 * tile_size;
+            
+                    if promotion_x <= x && x < promotion_x + tile_size && promotion_y <= y && y < promotion_y + tile_size {
+                        println!("Promoting to {:?}", piece_type);
+                        self.promote_pawn((row, col), *piece_type); // Promote to the selected piece
+                        self.promotion_square = None; // Clear promotion state
+                        return Ok(());
+                    }
+                }
+            }
             if let Some((row, col)) = self.coords_to_square(x, y) {
                 if let Some(selected) = self.selected {
                     if selected == (row, col) {
@@ -1240,10 +1307,10 @@ impl EventHandler<GameError> for ChessGame {
                             } else {
                                 7
                             };
-
+                            
                             if row == promotion_row {
-                                self.promote_pawn((row, col), PieceType::Queen);
-                                // Trigger promotion
+                                self.promotion_square = Some((row, col)); // Set promotion state
+                                self.needs_redraw = true;
                             }
                         }
 
@@ -1316,8 +1383,8 @@ fn main() -> GameResult {
     let args = Args::parse();
 
     let (mut ctx, event_loop) = ContextBuilder::new("chess", "YourName")
-        .window_setup(WindowSetup::default().title("Chess"))
-        .window_mode(WindowMode::default().dimensions(args.board_size, args.board_size)) //Window size based on tile sizes
+        .window_setup(WindowSetup::default().title("justchess"))
+        .window_mode(WindowMode::default().dimensions(args.board_size, args.board_size))
         .build()?;
 
     let mut game = ChessGame::new(&mut ctx, args.opponent, args.board_size / 8.0)?;
