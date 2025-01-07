@@ -14,7 +14,7 @@ use pieces::Pieces;
 #[derive(Parser)]
 #[command(name = "itsjustchess")]
 #[command(author = "Dr. Hugh Jass")]
-#[command(version = "0.1.0")]
+#[command(version = "0.1.1")]
 #[command(about = "It's just chess")]
 struct Args {
     /// FEN string to initialize the game state
