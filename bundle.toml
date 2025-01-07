@@ -1,0 +1,6 @@
+[bundle]
+name = "itsjustchess"
+#icon = "res/icon.icns"
+identifier = "com.mcgilmore.itsjustchess"
+version = "0.1.1"
+short_description = "Chess"
