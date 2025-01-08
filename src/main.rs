@@ -1201,7 +1201,7 @@ impl EventHandler<GameError> for ChessGame {
         
                 // Draw a background rectangle
                 let rect = Rect::new(rect_x, rect_y, total_width, self.tile_size);
-                let background_color = Color::from_rgba(196, 192, 188, 150);
+                let background_color = Color::from_rgba(196, 192, 188, 180);
                 let background_mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), rect, background_color)?;
                 canvas.draw(&background_mesh, DrawParam::default());
         
