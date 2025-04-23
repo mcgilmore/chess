@@ -13,8 +13,7 @@ use pieces::Pieces;
 /// Command-line arguments for the chess game.
 #[derive(Parser)]
 #[command(name = "itsjustchess")]
-#[command(author = "Dr. Hugh Jass")]
-#[command(version = "0.1.1")]
+#[command(version = "0.1.2")]
 #[command(about = "It's just chess")]
 struct Args {
     /// FEN string to initialize the game state
