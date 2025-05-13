@@ -5,15 +5,13 @@ use ggez::{Context, ContextBuilder, GameError, GameResult};
 
 use clap::Parser;
 
-use rand::seq::SliceRandom;
-
 mod pieces;
 use pieces::Pieces;
 
 /// Command-line arguments for the chess game.
 #[derive(Parser)]
 #[command(name = "itsjustchess")]
-#[command(version = "0.1.2")]
+#[command(version = "0.1.3")]
 #[command(about = "It's just chess")]
 struct Args {
     /// FEN string to initialize the game state
@@ -154,7 +152,7 @@ struct ChessGame {
 }
 
 impl ChessGame {
-    fn new(ctx: &mut Context, has_ai_opponent: bool, tile_size: f32) -> GameResult<Self> {
+    fn new(has_ai_opponent: bool, tile_size: f32) -> GameResult<Self> {
         let pieces = Pieces::new(); // Initialize the Pieces struct
         Ok(Self {
             board: ChessBoard::new_standard(),
@@ -1238,6 +1236,14 @@ impl EventHandler<GameError> for ChessGame {
                     self.show_possible_moves = !self.show_possible_moves;
                     self.needs_redraw = true;
                 }
+                ggez::input::keyboard::KeyCode::F => {
+                    let fen = self.to_fen();
+                    if let Err(e) = arboard::Clipboard::new().and_then(|mut cb| cb.set_text(fen.clone())) {
+                        eprintln!("Failed to copy FEN to clipboard: {e}");
+                    } else {
+                        println!("FEN copied to clipboard: {fen}");
+                    }
+                }
                 _ => {}
             }
         }
@@ -1414,12 +1420,12 @@ fn main() -> GameResult {
     // Parse command-line arguments
     let args = Args::parse();
 
-    let (mut ctx, event_loop) = ContextBuilder::new("chess", "YourName")
+    let (ctx, event_loop) = ContextBuilder::new("chess", "YourName")
         .window_setup(WindowSetup::default().title("justchess"))
         .window_mode(WindowMode::default().dimensions(args.board_size, args.board_size))
         .build()?;
 
-    let mut game = ChessGame::new(&mut ctx, args.opponent, args.board_size / 8.0)?;
+    let mut game = ChessGame::new(args.opponent, args.board_size / 8.0)?;
 
     if let Some(fen) = args.fen {
         match game.from_fen(&fen) {

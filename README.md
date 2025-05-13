@@ -1,3 +1,3 @@
-# itsjustchess v0.1.1
+# itsjustchess
 
 Chess game in rust with ggez
